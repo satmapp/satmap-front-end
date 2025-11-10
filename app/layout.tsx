@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SatMap",
-  description: "Mapa comunitario de comercios Bitcoin-friendly",
+  description: "Community map of Bitcoin-friendly businesses",
 };
 
 export default function RootLayout({
