@@ -21,7 +21,12 @@ export default function ProfilePage() {
       <div className="flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6">
         <div className="max-w-6xl mx-auto space-y-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold">Profile</h1>
+          <h1 className="text-3xl md:text-4xl font-bold">
+            Your{' '}
+            <span className="bg-gradient-to-r from-blue-500 via-bitcoin to-orange-500 bg-clip-text text-transparent">
+              Profile
+            </span>
+          </h1>
           <p className="text-muted-foreground">
             Manage your account and contributions
           </p>

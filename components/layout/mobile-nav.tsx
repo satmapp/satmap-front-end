@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MapPin, Plus, Wallet, User } from "lucide-react"
+import { MapPin, Plus, Wallet, User, Plane } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/map", label: "Map", icon: MapPin },
+  { href: "/tourist", label: "Tourist", icon: Plane },
   { href: "/add", label: "Add", icon: Plus },
   { href: "/wallet", label: "Wallet", icon: Wallet },
   { href: "/profile", label: "Profile", icon: User },
@@ -17,7 +18,7 @@ export function MobileNav() {
 
   return (
     <nav className="md:hidden border-t bg-card shrink-0">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href

@@ -12,6 +12,7 @@ import {
 
 const breadcrumbConfig: Record<string, string> = {
   '/map': 'Explore Map',
+  '/tourist': 'Tourist Guide',
   '/add': 'Add Business',
   '/wallet': 'Lightning Wallet',
   '/profile': 'Profile',

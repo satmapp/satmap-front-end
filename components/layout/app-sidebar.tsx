@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MapPin, Plus, Wallet, User, Zap } from "lucide-react"
+import { MapPin, Plus, Wallet, User, Zap, Plane } from "lucide-react"
 import { ModeToggle } from "@/components/ModeToggle"
 import {
   Sidebar,
@@ -27,6 +27,11 @@ const navMain = [
         title: "Explore Map",
         url: "/map",
         icon: MapPin,
+      },
+      {
+        title: "Tourist Guide",
+        url: "/tourist",
+        icon: Plane,
       },
       {
         title: "Add Business",
@@ -63,7 +68,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <span className="text-bitcoin">Sat</span>
                 <span>Map</span>
               </h1>
-              <p className="text-xs text-muted-foreground">Bitcoin Directory</p>
+              <p className="text-xs bg-gradient-to-r from-bitcoin via-orange-500 to-yellow-500 bg-clip-text text-transparent font-medium">
+                Bitcoin Directory
+              </p>
             </div>
           </div>
           <ModeToggle />
