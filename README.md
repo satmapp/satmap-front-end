@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SatMap - Bitcoin Business Directory
+
+A modern web application for discovering and verifying Bitcoin-accepting businesses with Lightning Network support.
+
+## Features
+
+- Interactive map to explore Bitcoin-friendly businesses
+- Add new businesses to the directory
+- Lightning Network wallet integration
+- User profiles and contributions tracking
+- Dark/Light theme support
+- Responsive design for mobile and desktop
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **UI Components:** shadcn/ui
+- **Map:** Leaflet & React-Leaflet
+- **State Management:** Zustand
+- **Theme:** next-themes
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ installed
+- npm or yarn package manager
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repo-url>
+cd satmap-front-end
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+satmap-front-end/
+├── app/
+│   ├── map/          # Map exploration page
+│   ├── add/          # Add business page
+│   ├── wallet/       # Lightning wallet page
+│   ├── profile/      # User profile page
+│   ├── layout.tsx    # Root layout with sidebar
+│   ├── page.tsx      # Home (redirects to /map)
+│   └── not-found.tsx # 404 page
+├── components/
+│   ├── layout/       # Layout components (sidebar, mobile nav)
+│   ├── ui/           # shadcn/ui components
+│   ├── Map.tsx       # Leaflet map component
+│   ├── ModeToggle.tsx # Theme toggle
+│   └── theme-provider.tsx
+├── lib/
+│   └── utils.ts      # Utility functions
+└── public/           # Static assets
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Available Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint
 
-## Deploy on Vercel
+## Features Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [ ] Business markers on map
+- [ ] Search and filter functionality
+- [ ] Lightning Network payment integration
+- [ ] User authentication
+- [ ] Business verification system
+- [ ] Rating and reviews
+- [ ] Geolocation support
+- [ ] Export/import business data
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
