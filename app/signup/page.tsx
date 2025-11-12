@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/store/auth-store'
+import { config } from '@/lib/config'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -29,7 +30,7 @@ export default function SignUpPage() {
       setLoading(true)
       
       const response = await fetch(
-        `http://localhost:8000/api/users?wallet_id=${encodeURIComponent(walletId)}`,
+        `${config.apiUrl}/users?wallet_id=${encodeURIComponent(walletId)}`,
         { method: 'POST' }
       )
 

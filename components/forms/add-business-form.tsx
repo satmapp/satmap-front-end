@@ -26,8 +26,20 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form'
-import { LocationPickerMap } from '@/components/location-picker-map'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+const LocationPickerMap = dynamic(
+  () => import('@/components/location-picker-map').then(mod => ({ default: mod.LocationPickerMap })),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[400px] bg-muted rounded-lg flex items-center justify-center">
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    )
+  }
+)
 
 export function AddBusinessForm() {
   const router = useRouter()
