@@ -1,13 +1,29 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BreadcrumbNav } from '@/components/breadcrumb-nav'
 import { AddBusinessForm } from '@/components/forms/add-business-form'
-
-export const metadata: Metadata = {
-  title: 'Add Business',
-}
+import { useAuthStore } from '@/lib/store/auth-store'
+import { Loading } from '@/components/loading'
+import { toast } from 'sonner'
 
 export default function AddBusinessPage() {
+  const router = useRouter()
+  const { user } = useAuthStore()
+
+  useEffect(() => {
+    if (!user) {
+      toast.error('Please login to add businesses')
+      router.push('/login')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (!user) {
+    return <Loading />
+  }
   return (
     <div className="h-full overflow-y-auto flex flex-col">
       <div className="border-b bg-background sticky top-0 z-10">

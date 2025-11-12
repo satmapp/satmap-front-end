@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { MapPin, Store, Phone, Globe, Zap, Wifi, Link2 } from 'lucide-react'
+import { MapPin, Store, Phone, Globe, Zap, Wifi, Link2, Navigation } from 'lucide-react'
 import { toast } from 'sonner'
 import { addBusinessSchema, type AddBusinessFormData } from '@/lib/validations/business'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,20 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form'
+import dynamic from 'next/dynamic'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+const LocationPickerMap = dynamic(
+  () => import('@/components/location-picker-map').then(mod => ({ default: mod.LocationPickerMap })),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[400px] bg-muted rounded-lg flex items-center justify-center">
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    )
+  }
+)
 
 export function AddBusinessForm() {
   const router = useRouter()
@@ -39,18 +53,66 @@ export function AddBusinessForm() {
       phone: '',
       website: '',
       paymentMethod: 'lightning',
+      latitude: 13.6929,
+      longitude: -89.2182,
     },
   })
 
+  const handleUseCurrentLocation = () => {
+    if ('geolocation' in navigator) {
+      toast.loading('Getting your location...', { id: 'geolocation' })
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude
+          const lng = position.coords.longitude
+          form.setValue('latitude', lat)
+          form.setValue('longitude', lng)
+          toast.success('Location set!', { id: 'geolocation' })
+        },
+        (error) => {
+          toast.error('Unable to get location', { 
+            id: 'geolocation',
+            description: 'Please allow location access or enter coordinates manually'
+          })
+        }
+      )
+    } else {
+      toast.error('Geolocation is not supported by your browser')
+    }
+  }
+
   const onSubmit = async (data: AddBusinessFormData) => {
     try {
-      console.log('Form data:', data)
-      
       toast.loading('Adding business...', { id: 'add-business' })
       
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const { createCommerce } = await import('@/lib/api')
+      const { useAuthStore } = await import('@/lib/store/auth-store')
       
-      toast.success('Business added successfully!', { id: 'add-business' })
+      const user = useAuthStore.getState().user
+      
+      if (!user) {
+        toast.error('Please login to add businesses', { id: 'add-business' })
+        router.push('/login')
+        return
+      }
+      
+      await createCommerce({
+        name: data.businessName,
+        address: data.address,
+        city: data.city,
+        country: data.country,
+        phone: data.phone || undefined,
+        website: data.website || undefined,
+        category: data.category,
+        payment_method: data.paymentMethod,
+        latitude: data.latitude,
+        longitude: data.longitude,
+      }, user.id)
+      
+      toast.success(
+        'Business added successfully! You\'ll earn 150 sats when verified by 3 users',
+        { id: 'add-business', duration: 5000 }
+      )
       
       setTimeout(() => {
         router.push('/map')
@@ -128,6 +190,82 @@ export function AddBusinessForm() {
               )}
             />
           </div>
+
+          <Card className="bg-muted/50">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Location
+              </CardTitle>
+              <CardDescription>
+                Click on the map to set the exact location, or enter coordinates manually
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <LocationPickerMap
+                position={[form.watch('latitude'), form.watch('longitude')]}
+                onPositionChange={(position) => {
+                  form.setValue('latitude', position[0])
+                  form.setValue('longitude', position[1])
+                }}
+              />
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUseCurrentLocation}
+                  className="gap-2"
+                >
+                  <Navigation className="w-4 h-4" />
+                  Use My Location
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="latitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Latitude</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="13.6929"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="longitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Longitude</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="-89.2182"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <FormField
             control={form.control}

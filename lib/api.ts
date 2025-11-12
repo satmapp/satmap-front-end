@@ -221,3 +221,114 @@ export async function getCategories(): Promise<Category[]> {
   ]
 }
 
+import { config } from './config'
+
+const API_BASE_URL = config.apiUrl
+
+export interface Commerce {
+  id: number
+  name: string
+  address: string
+  city: string
+  country: string
+  phone?: string
+  website?: string
+  category: string
+  payment_method: string
+  latitude: number
+  longitude: number
+  photo_url?: string
+  verified: boolean
+  verification_count: number
+  premium: boolean
+  submitted_by_id: number
+  created_at: string
+}
+
+export async function getCommerces(verified?: boolean): Promise<Commerce[]> {
+  try {
+    const params = verified !== undefined ? `?verified=${verified}` : ''
+    const response = await fetch(`${API_BASE_URL}/commerces${params}`)
+    if (!response.ok) throw new Error('Failed to fetch commerces')
+    return response.json()
+  } catch (error) {
+    console.error('Error fetching commerces:', error)
+    return []
+  }
+}
+
+export async function getPendingCommerces(): Promise<Commerce[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/commerces/pending`)
+    if (!response.ok) throw new Error('Failed to fetch pending commerces')
+    return response.json()
+  } catch (error) {
+    console.error('Error fetching pending commerces:', error)
+    return []
+  }
+}
+
+export async function createCommerce(data: {
+  name: string
+  address: string
+  city: string
+  country: string
+  phone?: string
+  website?: string
+  category: string
+  payment_method: string
+  latitude: number
+  longitude: number
+  photo_url?: string
+}, userId: number): Promise<Commerce> {
+  const response = await fetch(`${API_BASE_URL}/commerces?user_id=${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  if (!response.ok) throw new Error('Failed to create commerce')
+  return response.json()
+}
+
+export async function verifyCommerce(commerceId: number, userId: number) {
+  const response = await fetch(
+    `${API_BASE_URL}/commerces/${commerceId}/verify?user_id=${userId}`,
+    { method: 'POST' }
+  )
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to verify commerce')
+  }
+  return response.json()
+}
+
+export async function createUser(walletId: string) {
+  const response = await fetch(`${API_BASE_URL}/users?wallet_id=${walletId}`, {
+    method: 'POST'
+  })
+  if (!response.ok) throw new Error('Failed to create user')
+  return response.json()
+}
+
+export async function getUser(userId: number) {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`)
+  if (!response.ok) throw new Error('Failed to get user')
+  return response.json()
+}
+
+export async function getUserBalance(userId: number) {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/balance`)
+  if (!response.ok) throw new Error('Failed to get balance')
+  return response.json()
+}
+
+export async function withdrawRewards(userId: number, paymentRequest: string) {
+  const response = await fetch(`${API_BASE_URL}/rewards/withdraw`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, payment_request: paymentRequest })
+  })
+  if (!response.ok) throw new Error('Failed to withdraw')
+  return response.json()
+}
+
