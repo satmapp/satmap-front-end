@@ -1,4 +1,6 @@
-import type { Metadata, Viewport } from "next"
+'use client'
+
+import { usePathname } from 'next/navigation'
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -17,30 +19,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: "SatMap - Bitcoin Business Directory",
-    template: "%s | SatMap"
-  },
-  description: "Discover and verify Bitcoin-accepting businesses with Lightning Network support",
-  keywords: ["bitcoin", "lightning network", "crypto", "businesses", "map"],
-}
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" }
-  ],
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const pathname = usePathname()
+  const showSidebar = pathname !== '/' && pathname !== '/login' && pathname !== '/signup'
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
@@ -50,17 +36,23 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider>
-            <div className="flex h-screen w-full overflow-hidden">
-              <AppSidebar />
-              <div className="flex flex-col flex-1 overflow-hidden">
-                <main className="flex-1 overflow-hidden">
-                  {children}
-                </main>
-                <MobileNav />
+          {showSidebar ? (
+            <SidebarProvider>
+              <div className="flex h-screen w-full overflow-hidden">
+                <AppSidebar />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <main className="flex-1 overflow-hidden">
+                    {children}
+                  </main>
+                  <MobileNav />
+                </div>
               </div>
-            </div>
-          </SidebarProvider>
+            </SidebarProvider>
+          ) : (
+            <main className="min-h-screen">
+              {children}
+            </main>
+          )}
           <Toaster />
         </ThemeProvider>
       </body>
