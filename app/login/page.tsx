@@ -3,52 +3,53 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, Wallet, LogIn } from 'lucide-react'
+import { Zap, Key, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { config } from '@/lib/config'
+import { getCurrentUser } from '@/lib/api'
 
 export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
-  const [walletId, setWalletId] = useState('')
+  const [apiKey, setApiKey] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!walletId.trim()) {
-      toast.error('Please enter your wallet ID')
+    if (!apiKey.trim()) {
+      toast.error('Please enter your API key')
       return
     }
 
     try {
       setLoading(true)
       
-      const response = await fetch(
-        `${config.apiUrl}/users?wallet_id=${encodeURIComponent(walletId)}`,
-        { method: 'POST' }
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to login')
-      }
-
-      const user = await response.json()
+      toast.loading('Logging in...', { id: 'login' })
       
-      login(user)
+      const user = await getCurrentUser(apiKey)
+      
+      login({
+        ...user,
+        lnbits_invoice_key: apiKey
+      })
       
       toast.success('Welcome back!', {
-        description: `Logged in as User #${user.id}`
+        id: 'login',
+        description: `Logged in as ${user.username}`
       })
 
       router.push('/map')
+      
     } catch (error: any) {
-      toast.error('Login failed. Please check your wallet ID.')
+      toast.error('Login failed', {
+        id: 'login',
+        description: 'Invalid API key. Please check and try again.'
+      })
     } finally {
       setLoading(false)
     }
@@ -59,38 +60,42 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="flex items-center justify-center w-12 h-12 bg-bitcoin rounded-lg">
-              <Zap className="w-6 h-6 text-black" />
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-bitcoin rounded-lg">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
             </div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-2xl sm:text-3xl font-bold">
               <span className="text-bitcoin">Sat</span>Map
             </h1>
           </div>
-          <p className="text-muted-foreground">Sign in to your account</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Sign in to your account</p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-bitcoin" />
+              <Key className="w-5 h-5 text-bitcoin" />
               Login
             </CardTitle>
             <CardDescription>
-              Enter your wallet ID to access your account
+              Enter your API key (LNbits invoice key) to access your account
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="wallet">Wallet ID</Label>
+                <Label htmlFor="apikey">API Key</Label>
                 <Input
-                  id="wallet"
-                  placeholder="Enter your wallet ID"
-                  value={walletId}
-                  onChange={(e) => setWalletId(e.target.value)}
+                  id="apikey"
+                  type="password"
+                  placeholder="Enter your API key"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
                   disabled={loading}
                   autoFocus
                 />
+                <p className="text-xs text-muted-foreground">
+                  This is your LNbits invoice key received during signup
+                </p>
               </div>
 
               <Button
@@ -124,4 +129,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
