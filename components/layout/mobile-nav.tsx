@@ -2,13 +2,18 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MapPin, Plus, Wallet, User, Plane } from "lucide-react"
+import { MapPin, Plus, Wallet, User, Plane, LogIn, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/lib/store/auth-store"
 
 const publicNavItems = [
   { href: "/map", label: "Map", icon: MapPin },
   { href: "/tourist", label: "Tourist", icon: Plane },
+]
+
+const authNavItems = [
+  { href: "/login", label: "Login", icon: LogIn },
+  { href: "/signup", label: "Sign Up", icon: UserPlus },
 ]
 
 const protectedNavItems = [
@@ -21,8 +26,10 @@ export function MobileNav() {
   const pathname = usePathname()
   const { user } = useAuthStore()
 
-  const navItems = user ? [...publicNavItems, ...protectedNavItems] : publicNavItems
-  const gridCols = user ? "grid-cols-5" : "grid-cols-2"
+  const navItems = user 
+    ? [...publicNavItems, ...protectedNavItems] 
+    : [...publicNavItems, ...authNavItems]
+  const gridCols = user ? "grid-cols-5" : "grid-cols-4"
 
   return (
     <nav className="md:hidden border-t bg-card shrink-0">
