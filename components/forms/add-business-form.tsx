@@ -3,7 +3,8 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { MapPin, Store, Phone, Globe, Zap, Wifi, Link2, Navigation } from 'lucide-react'
+import { useState } from 'react'
+import { MapPin, Store, Phone, Globe, Zap, Wifi, Link2, Navigation, Image as ImageIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { addBusinessSchema, type AddBusinessFormData } from '@/lib/validations/business'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,7 @@ const LocationPickerMap = dynamic(
 
 export function AddBusinessForm() {
   const router = useRouter()
+  
   const form = useForm<AddBusinessFormData>({
     resolver: zodResolver(addBusinessSchema),
     defaultValues: {
@@ -52,6 +54,7 @@ export function AddBusinessForm() {
       country: '',
       phone: '',
       website: '',
+      photoUrl: '',
       paymentMethod: 'lightning',
       latitude: 13.6929,
       longitude: -89.2182,
@@ -90,7 +93,7 @@ export function AddBusinessForm() {
       
       const user = useAuthStore.getState().user
       
-      if (!user) {
+      if (!user || !user.lnbits_invoice_key) {
         toast.error('Please login to add businesses', { id: 'add-business' })
         router.push('/login')
         return
@@ -103,11 +106,12 @@ export function AddBusinessForm() {
         country: data.country,
         phone: data.phone || undefined,
         website: data.website || undefined,
+        photo_url: data.photoUrl || undefined,
         category: data.category,
         payment_method: data.paymentMethod,
         latitude: data.latitude,
         longitude: data.longitude,
-      }, user.id)
+      }, user.lnbits_invoice_key)
       
       toast.success(
         'Business added successfully! You\'ll earn 150 sats when verified by 3 users',
@@ -117,9 +121,12 @@ export function AddBusinessForm() {
       setTimeout(() => {
         router.push('/map')
       }, 500)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting form:', error)
-      toast.error('Failed to add business. Please try again.', { id: 'add-business' })
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to add business. Please try again.',
+        { id: 'add-business' }
+      )
     }
   }
 
@@ -193,11 +200,11 @@ export function AddBusinessForm() {
 
           <Card className="bg-muted/50">
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 Location
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Click on the map to set the exact location, or enter coordinates manually
               </CardDescription>
             </CardHeader>
@@ -305,6 +312,24 @@ export function AddBusinessForm() {
 
           <FormField
             control={form.control}
+            name="photoUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  Photo URL
+                </FormLabel>
+                <FormControl>
+                  <Input placeholder="https://example.com/image.jpg" {...field} />
+                </FormControl>
+                <FormDescription>Optional - URL of the business photo</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="category"
             render={({ field }) => (
               <FormItem>
@@ -370,17 +395,21 @@ export function AddBusinessForm() {
           />
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button
             type="button"
             variant="outline"
-            className="flex-1"
+            className="flex-1 w-full sm:w-auto"
             onClick={() => router.back()}
             disabled={form.formState.isSubmitting}
           >
             Cancel
           </Button>
-          <Button type="submit" className="flex-1" disabled={form.formState.isSubmitting}>
+          <Button 
+            type="submit" 
+            className="flex-1 w-full sm:w-auto" 
+            disabled={form.formState.isSubmitting}
+          >
             {form.formState.isSubmitting ? 'Submitting...' : 'Submit Business'}
           </Button>
         </div>

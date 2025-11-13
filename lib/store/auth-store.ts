@@ -3,8 +3,9 @@ import { persist } from 'zustand/middleware'
 
 interface User {
   id: number
-  wallet_id: string
-  sats_earned: number
+  username: string
+  lnbits_wallet_id: string
+  lnbits_invoice_key: string
   level: number
   created_at: string
 }
@@ -14,7 +15,6 @@ interface AuthStore {
   isAuthenticated: boolean
   login: (user: User) => void
   logout: () => void
-  updateBalance: (sats: number) => void
   updateUser: (user: User) => void
 }
 
@@ -25,10 +25,6 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       login: (user) => set({ user, isAuthenticated: true }),
       logout: () => set({ user: null, isAuthenticated: false }),
-      updateBalance: (sats) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, sats_earned: sats } : null,
-        })),
       updateUser: (user) => set({ user, isAuthenticated: true }),
     }),
     {
@@ -36,4 +32,3 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 )
-

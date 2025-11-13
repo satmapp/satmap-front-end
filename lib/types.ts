@@ -39,12 +39,37 @@ export interface Commerce {
   created_at: string
 }
 
+export interface CommerceCreate {
+  name: string
+  address: string
+  city: string
+  country: string
+  phone?: string
+  website?: string
+  category: string
+  payment_method: string
+  latitude: number
+  longitude: number
+  photo_url?: string
+}
+
 export interface User {
   id: number
-  wallet_id: string
-  sats_earned: number
+  username: string
+  lnbits_wallet_id: string
+  lnbits_invoice_key: string
   level: number
   created_at: string
+}
+
+export interface UserWithKeys extends User {
+  lnbits_invoice_key: string
+}
+
+export interface UserBalance {
+  user_id: number
+  balance_sats: number
+  balance_msats: number
 }
 
 export interface VerificationResult {
@@ -52,5 +77,11 @@ export interface VerificationResult {
   verified: boolean
   count?: number
   rewards_distributed?: boolean
+  rewards_sent?: number
 }
 
+export interface WithdrawResult {
+  message: string
+  amount_msats: number
+  payment_hash: string
+}

@@ -1,229 +1,276 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, MapPin, Award, Settings, TrendingUp, Zap, Trophy } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { User as UserIcon, Award, MapPin, CheckCircle, Zap, Calendar, LogOut, Sun, Moon, Key, Copy } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { BreadcrumbNav } from '@/components/breadcrumb-nav'
-import { getUser, getUserBalance } from '@/lib/api'
-import { Loading } from '@/components/loading'
-import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/store/auth-store'
+import { getUserBalance } from '@/lib/api'
+import { BreadcrumbNav } from '@/components/breadcrumb-nav'
+import { toast } from 'sonner'
+import { useTheme } from 'next-themes'
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, updateUser } = useAuthStore()
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+  const { theme, setTheme } = useTheme()
+  const [balance, setBalance] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) {
+      toast.error('Please login to view your profile')
       router.push('/login')
       return
     }
-    loadUserData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
-  const loadUserData = async () => {
-    if (!user) return
+    loadBalance()
+  }, [user, router])
+
+  const loadBalance = async () => {
+    if (!user?.lnbits_invoice_key) return
 
     try {
-      setLoading(true)
-      
-      const [userData, balanceData] = await Promise.all([
-        getUser(user.id),
-        getUserBalance(user.id)
-      ])
-      
-      updateUser({
-        ...userData,
-        sats_earned: balanceData.balance_sats
-      })
+      const data = await getUserBalance(user.lnbits_invoice_key)
+      setBalance(data.balance_sats)
     } catch (error) {
-      console.error('Error loading user data:', error)
-      toast.error('Error loading profile data')
+      console.error('Failed to load balance:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const getLevelName = (level: number) => {
-    if (level >= 10) return 'Bitcoin Embajador'
-    if (level >= 5) return 'Lightning Pioneer'
-    if (level >= 2) return 'Bitcoin Explorer'
-    return 'Bitcoin Novice'
+  const handleLogout = () => {
+    logout()
+    toast.success('Logged out successfully')
+    router.push('/')
   }
 
-  const getLevelIcon = (level: number) => {
-    if (level >= 10) return '👑'
-    if (level >= 5) return '⚡'
-    if (level >= 2) return '🗺️'
-    return '🌱'
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
   }
 
-  if (!user || loading) {
-    return <Loading />
+  const copyApiKey = () => {
+    if (user?.lnbits_invoice_key) {
+      navigator.clipboard.writeText(user.lnbits_invoice_key)
+      toast.success('API key copied!', {
+        description: 'Use it to login on other devices'
+      })
+    }
   }
+
+  const copyWalletId = () => {
+    if (user?.lnbits_wallet_id) {
+      navigator.clipboard.writeText(user.lnbits_wallet_id)
+      toast.success('Wallet ID copied!', {
+        description: 'Your LNbits wallet identifier'
+      })
+    }
+  }
+
+  if (!user) return null
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col">
+    <div className="h-full w-full flex flex-col">
       <div className="border-b bg-background sticky top-0 z-10">
-        <div className="px-6 py-3">
+        <div className="px-4 md:px-6 lg:px-8 py-3">
           <BreadcrumbNav />
         </div>
       </div>
-      <div className="flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6">
-        <div className="max-w-6xl mx-auto space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold">
-            Your{' '}
-            <span className="bg-gradient-to-r from-blue-500 via-bitcoin to-orange-500 bg-clip-text text-transparent">
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 md:px-6 lg:px-8 py-6 pb-20 md:pb-6 max-w-4xl mx-auto space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <UserIcon className="w-6 h-6 sm:w-8 sm:h-8 text-bitcoin" />
               Profile
-            </span>
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your account and contributions
-          </p>
-        </div>
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Your contributions and statistics
+            </p>
+          </div>
 
-        <Card className="bg-gradient-to-br from-bitcoin/5 to-orange-500/5">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-20 h-20 border-2 border-bitcoin">
-                <AvatarFallback className="bg-bitcoin/10 text-2xl">
-                  {getLevelIcon(user.level)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold">
-                  User #{user.id}
-                </h2>
-                <p className="text-sm text-muted-foreground font-mono mt-1">
-                  {user.wallet_id}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="secondary" className="text-xs gap-1">
-                    <Trophy className="w-3 h-3" />
-                    Level {user.level} - {getLevelName(user.level)}
-                  </Badge>
-                  <Badge className="text-xs bg-green-500 hover:bg-green-600">
-                    ✓ Connected
-                  </Badge>
+          <Card className="border-bitcoin/20 bg-gradient-to-br from-bitcoin/5 to-orange-500/5">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex-1">
+                  <CardTitle className="text-xl sm:text-2xl break-words">{user.username}</CardTitle>
+                  <CardDescription className="flex items-center gap-2 mt-1 text-xs sm:text-sm">
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                    Member since {new Date(user.created_at).toLocaleDateString()}
+                  </CardDescription>
                 </div>
+                <Badge className="text-base sm:text-lg px-3 py-1 sm:px-4 sm:py-2">
+                  Level {user.level}
+                </Badge>
               </div>
-              <Button variant="outline" size="icon" className="shrink-0">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-2 text-xl sm:text-2xl font-bold">
+                <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-bitcoin" />
+                <span className="text-bitcoin">{loading ? '...' : balance.toFixed(0)}</span>
+                <span className="text-muted-foreground text-base sm:text-lg">sats earned</span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6 flex flex-col items-center text-center space-y-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-bitcoin/10">
-                <Zap className="w-6 h-6 text-bitcoin" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold">{user.sats_earned}</p>
-                <p className="text-sm text-muted-foreground">Sats Earned</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 flex flex-col items-center text-center space-y-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-bitcoin/10">
-                <MapPin className="w-6 h-6 text-bitcoin" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold">0</p>
-                <p className="text-sm text-muted-foreground">Businesses Added</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 flex flex-col items-center text-center space-y-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-bitcoin/10">
-                <Award className="w-6 h-6 text-bitcoin" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold">0</p>
-                <p className="text-sm text-muted-foreground">Verifications</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-bitcoin" />
-              Earning Opportunities
-            </CardTitle>
-            <CardDescription>Ways to earn more satoshis</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-bitcoin/10">
-                  <MapPin className="w-4 h-4 text-bitcoin" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Level
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-bitcoin" />
+                  <span className="text-2xl font-bold">{user.level}</span>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  User ID
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <UserIcon className="w-5 h-5 text-bitcoin" />
+                  <span className="text-2xl font-bold">#{user.id}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Wallet ID
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-bitcoin flex-shrink-0" />
+                  <span className="text-sm font-mono truncate flex-1">
+                    {user.lnbits_wallet_id.substring(0, 8)}...
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    onClick={copyWalletId}
+                    title="Copy Wallet ID"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Settings</CardTitle>
+              <CardDescription>
+                Manage your account settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={toggleTheme}
+                  className="flex-1 gap-2"
+                >
+                  {theme === 'dark' ? (
+                    <>
+                      <Sun className="w-4 h-4" />
+                      Light Mode
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-4 h-4" />
+                      Dark Mode
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleLogout}
+                  className="flex-1 gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-bitcoin" />
+                Your API Key
+              </CardTitle>
+              <CardDescription>
+                Use this key to login on other devices. Keep it safe!
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono">
+                  {'•'.repeat(40)}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={copyApiKey}
+                  title="Copy API Key"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Click the copy button to copy your API key to clipboard
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>How to Earn More Sats</CardTitle>
+              <CardDescription>
+                Contribute to the community and get rewarded
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                <MapPin className="w-5 h-5 text-bitcoin mt-0.5" />
                 <div>
-                  <p className="font-medium text-sm">Add a Business</p>
-                  <p className="text-xs text-muted-foreground">Earn 150 sats when verified</p>
+                  <p className="font-medium">Add Businesses</p>
+                  <p className="text-sm text-muted-foreground">
+                    Earn 150 sats when your business gets verified by 3 users
+                  </p>
                 </div>
               </div>
-              <Badge variant="secondary">150 sats</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-bitcoin/10">
-                  <Award className="w-4 h-4 text-bitcoin" />
-                </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                <CheckCircle className="w-5 h-5 text-bitcoin mt-0.5" />
                 <div>
-                  <p className="font-medium text-sm">Verify a Business</p>
-                  <p className="text-xs text-muted-foreground">Earn 50 sats per verification</p>
+                  <p className="font-medium">Verify Businesses</p>
+                  <p className="text-sm text-muted-foreground">
+                    Earn 50 sats for each business you verify
+                  </p>
                 </div>
               </div>
-              <Badge variant="secondary">50 sats</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-bitcoin" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>Your latest contributions to the directory</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">No activity yet</p>
-              <p className="text-xs mt-1">Start by adding your first business</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex gap-3 justify-center pb-6">
-          {user.sats_earned > 0 && (
-            <Button size="lg" className="gap-2">
-              <Zap className="w-4 h-4" />
-              Withdraw {user.sats_earned} sats
-            </Button>
-          )}
-          <Button size="lg" variant="outline" onClick={loadUserData} className="gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Refresh Balance
-          </Button>
-        </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   )
 }
-

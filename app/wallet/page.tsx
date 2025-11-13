@@ -1,27 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Wallet, Zap, QrCode, Send, ArrowDownToLine, RefreshCw } from 'lucide-react'
+import { Wallet as WalletIcon, Zap, TrendingUp, ArrowDownToLine, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { BreadcrumbNav } from '@/components/breadcrumb-nav'
-import { useAuthStore } from '@/lib/store/auth-store'
-import { Loading } from '@/components/loading'
-import { toast } from 'sonner'
-import { getUserBalance, withdrawRewards } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/lib/store/auth-store'
+import { getUserBalance, withdrawRewards } from '@/lib/api'
+import { BreadcrumbNav } from '@/components/breadcrumb-nav'
 
 export default function WalletPage() {
   const router = useRouter()
-  const { user, updateBalance } = useAuthStore()
-  const [balance, setBalance] = useState(0)
+  const user = useAuthStore((state) => state.user)
+  const [balance, setBalance] = useState<number>(0)
+  const [balanceMsats, setBalanceMsats] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [withdrawing, setWithdrawing] = useState(false)
-  const [showWithdraw, setShowWithdraw] = useState(false)
   const [invoice, setInvoice] = useState('')
 
   useEffect(() => {
@@ -30,122 +27,135 @@ export default function WalletPage() {
       router.push('/login')
       return
     }
+
     loadBalance()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [user, router])
 
   const loadBalance = async () => {
-    if (!user) return
+    if (!user?.lnbits_invoice_key) return
+
     try {
       setLoading(true)
-      const data = await getUserBalance(user.id)
+      const data = await getUserBalance(user.lnbits_invoice_key)
       setBalance(data.balance_sats)
-      updateBalance(data.balance_sats)
+      setBalanceMsats(data.balance_msats)
     } catch (error) {
-      toast.error('Error loading balance')
-      console.error(error)
+      toast.error('Failed to load balance')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleWithdraw = async () => {
-    if (!user || !invoice.trim()) {
-      toast.error('Please enter a valid Lightning invoice')
+  const handleWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!user?.lnbits_invoice_key) {
+      toast.error('Please login first')
       return
     }
-    
+
+    if (!invoice.trim()) {
+      toast.error('Please enter a Lightning invoice')
+      return
+    }
+
+    if (!invoice.toLowerCase().startsWith('lnbc')) {
+      toast.error('Invalid Lightning invoice format')
+      return
+    }
+
     try {
       setWithdrawing(true)
       toast.loading('Processing withdrawal...', { id: 'withdraw' })
-      
-      const result = await withdrawRewards(user.id, invoice)
-      
-      toast.success('Withdrawal successful!', { 
+
+      const result = await withdrawRewards(invoice, user.lnbits_invoice_key)
+
+      toast.success('Withdrawal successful!', {
         id: 'withdraw',
-        description: `${balance} sats sent to your wallet`
+        description: `Sent ${(result.amount_msats / 1000).toFixed(0)} sats`
       })
-      
+
       setInvoice('')
-      setShowWithdraw(false)
       await loadBalance()
+
     } catch (error: any) {
-      toast.error('Withdrawal failed', { 
+      toast.error('Withdrawal failed', {
         id: 'withdraw',
-        description: error.message || 'Please check your invoice and try again'
+        description: error.message
       })
     } finally {
       setWithdrawing(false)
     }
   }
 
-  if (!user || loading) {
-    return <Loading />
-  }
+
   return (
-    <div className="h-full overflow-y-auto flex flex-col">
+    <div className="h-full w-full flex flex-col">
       <div className="border-b bg-background sticky top-0 z-10">
-        <div className="px-6 py-3">
+        <div className="px-4 md:px-6 lg:px-8 py-3">
           <BreadcrumbNav />
         </div>
       </div>
-      <div className="flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6">
-        <div className="max-w-6xl mx-auto space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold">
-            <span className="bg-gradient-to-r from-purple-500 via-bitcoin to-yellow-500 bg-clip-text text-transparent">
-              Lightning
-            </span>{' '}
-            Wallet
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your Bitcoin Lightning Network wallet
-          </p>
-        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="flex items-center justify-center w-16 h-16 bg-bitcoin/10 rounded-full">
-                <Zap className="w-8 h-8 text-bitcoin" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Available Balance</p>
-                <p className="text-5xl font-bold text-bitcoin">{balance}</p>
-                <p className="text-sm text-muted-foreground">satoshis</p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={loadBalance}
-                className="gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <RefreshCw className="w-3 h-3" />
-                Refresh
-              </Button>
-            </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 md:px-6 lg:px-8 py-6 pb-20 md:pb-6 max-w-2xl mx-auto space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <WalletIcon className="w-6 h-6 sm:w-8 sm:h-8 text-bitcoin" />
+              Lightning Wallet
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Manage your sats and withdraw to external wallet
+            </p>
+          </div>
 
-            <Separator className="my-6" />
-
-            {!showWithdraw ? (
-              <div className="space-y-3">
-                <Button 
-                  onClick={() => setShowWithdraw(true)}
-                  disabled={balance === 0}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  <ArrowDownToLine className="w-5 h-5" />
-                  Withdraw to Lightning Wallet
-                </Button>
-                {balance === 0 && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Add or verify businesses to earn sats!
+          <Card className="border-bitcoin/20 bg-gradient-to-br from-bitcoin/5 to-orange-500/5">
+            <CardHeader>
+              <CardTitle className="text-base sm:text-lg">Current Balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-bitcoin" />
+                  <span className="text-sm sm:text-base text-muted-foreground">Loading balance...</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-3xl sm:text-4xl font-bold text-bitcoin">
+                      {balance.toFixed(0)}
+                    </span>
+                    <span className="text-xl sm:text-2xl text-muted-foreground">sats</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {balanceMsats.toLocaleString()} millisats
                   </p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadBalance}
+                    className="gap-2"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    Refresh Balance
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ArrowDownToLine className="w-5 h-5 text-bitcoin" />
+                Withdraw Sats
+              </CardTitle>
+              <CardDescription>
+                Send your earned sats to any Lightning wallet
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleWithdraw} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="invoice">Lightning Invoice</Label>
                   <Input
@@ -153,98 +163,42 @@ export default function WalletPage() {
                     placeholder="lnbc..."
                     value={invoice}
                     onChange={(e) => setInvoice(e.target.value)}
-                    className="font-mono text-sm"
+                    disabled={withdrawing || balance <= 0}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Generate an invoice for {balance} sats from your Lightning wallet
+                    Generate an invoice in your Lightning wallet and paste it here
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleWithdraw}
-                    disabled={withdrawing || !invoice.trim()}
-                    className="flex-1 gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    {withdrawing ? 'Processing...' : 'Confirm Withdrawal'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowWithdraw(false)
-                      setInvoice('')
-                    }}
-                    disabled={withdrawing}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-bitcoin" />
-              Lightning Features
-            </CardTitle>
-            <CardDescription>Fast, cheap, and scalable Bitcoin payments</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Badge variant="secondary" className="mt-0.5 shrink-0">
-                <Zap className="w-3 h-3" />
-              </Badge>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Instant Payments</p>
-                <p className="text-xs text-muted-foreground">Send and receive in seconds</p>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex items-start gap-3">
-              <Badge variant="secondary" className="mt-0.5 shrink-0">
-                <Zap className="w-3 h-3" />
-              </Badge>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Low Fees</p>
-                <p className="text-xs text-muted-foreground">Minimal transaction costs</p>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex items-start gap-3">
-              <Badge variant="secondary" className="mt-0.5 shrink-0">
-                <Zap className="w-3 h-3" />
-              </Badge>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Scalable</p>
-                <p className="text-xs text-muted-foreground">Millions of transactions per second</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                <Button
+                  type="submit"
+                  className="w-full gap-2"
+                  disabled={withdrawing || balance <= 0 || !invoice.trim()}
+                >
+                  {withdrawing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      Withdraw {balance > 0 ? `${balance.toFixed(0)} sats` : 'All'}
+                    </>
+                  )}
+                </Button>
 
-        <Card className="bg-bitcoin/5 border-bitcoin/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-bitcoin/10 shrink-0">
-                <Zap className="w-5 h-5 text-bitcoin" />
-              </div>
-              <div className="space-y-1">
-                <p className="font-semibold">How to withdraw</p>
-                <p className="text-sm text-muted-foreground">
-                  Open your Lightning wallet (Phoenix, Wallet of Satoshi, etc.), create an invoice 
-                  for the amount you want to withdraw, paste it here, and confirm. Your sats will 
-                  arrive instantly! ⚡
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                {balance <= 0 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    You need to earn sats first by verifying businesses
+                  </p>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
     </div>
   )
 }
-

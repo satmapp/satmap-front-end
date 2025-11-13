@@ -41,14 +41,14 @@ export function LocationPickerMap({ position, onPositionChange }: LocationPicker
 
   if (!isMounted) {
     return (
-      <div className="w-full h-[400px] bg-muted rounded-lg flex items-center justify-center">
-        <p className="text-muted-foreground">Loading map...</p>
+      <div className="w-full h-[250px] sm:h-[350px] md:h-[400px] bg-muted rounded-lg flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Loading map...</p>
       </div>
     )
   }
 
   return (
-    <div className="w-full h-[400px] rounded-lg overflow-hidden border">
+    <div className="w-full h-[250px] sm:h-[350px] md:h-[400px] rounded-lg overflow-hidden border">
       <MapContainer
         center={position}
         zoom={13}

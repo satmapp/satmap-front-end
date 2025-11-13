@@ -28,6 +28,11 @@ export const addBusinessSchema = z.object({
     .url("Invalid URL")
     .optional()
     .or(z.literal("")),
+  photoUrl: z
+    .string()
+    .url("Invalid image URL")
+    .optional()
+    .or(z.literal("")),
   category: z.enum(
     ["restaurant", "cafe", "hotel", "shop", "service", "other"],
     { message: "You must select a category" }
